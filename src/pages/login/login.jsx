@@ -1,9 +1,12 @@
 import React,{Component} from 'react'
-import {Form,Input,Icon,Button,} from 'antd'
+import {Redirect} from 'react-router-dom'
+import {Form,Input,Icon,Button,message} from 'antd'
 import {reqLogin} from '../../api'
+import memoryUtils from '../../utils/memoryUtils'
+ import sotageUtils from '../../utils/storageUtils'
 
 
-import logo from './images/logo.png'
+import logo from '../../assets/images/logo.png'
 import './login.less'
 
 
@@ -24,12 +27,33 @@ class Login extends Component{
                 }).catch(error =>{
                     console.log('失败了',error)
                 }) */
-                try{
+               /*  try{
                     const response = await reqLogin(username,password);
-                    console.log('请求成功',response)
+                    console.log('请求成功',response.data)
                 }catch(error){
                     console.log('请求出错了',error)
+                } */
+                const result= await reqLogin(username,password)//{status:0 , data: user} || {status:1,msg:'xxx'}
+                // const response = await reqLogin(username,password)
+                // console.log('请求成功',response.data)
+                // const result = response.data //{status:0 , data: user} || {status:1,msg:'xxx'}
+                if(result.status === 0){ // 登陆成功
+                    //提示登陆成功
+                    message.success('登陆成功')
+
+                    //获取用户信息，保存user
+                    const user = result.data;
+                    memoryUtils.user = user //保存在内存中
+                    sotageUtils.saveUser(user) //保存到local中
+
+                    // 跳转到后台管理页面(不需要回退回来)
+                    //push()跳转新页面  goback()跳回  replace()替换
+                    this.props.history.replace('/')
+                }else{// 登陆失败
+                    //提示错误信息
+                    message.error(result.msg)
                 }
+
                 
             }else{
                 console.log('校验失败')
@@ -65,6 +89,13 @@ class Login extends Component{
         })*/
     }
     render(){
+        //如果用户已经登陆，自动跳转到管理页面
+        const user = memoryUtils.user
+        if(user && user._id){
+            //如果存储中有user的id
+            return <Redirect to='/'/>
+        }
+
         const {getFieldDecorator} = this.props.form
         return (
             <div className="login">
@@ -129,8 +160,10 @@ export default WrapLogin
 /* 
 async 和await
 1.作用？
-
+    简化promise对象的使用: 不用再使用then() 来指定成功/失败的回调函数
+    以同步编码(没有回调函数)方式实现异步流程
 2.哪里写await？
-
-3.哪里写async
+    在返回promise的表达式左侧写await: 不想要promise，想要promise异步执行的成功的values数据
+3.哪里写async?
+    await所在函数(最近的)定义的左侧写async
 */
